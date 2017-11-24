@@ -17,11 +17,11 @@ import java.util.concurrent.TimeUnit;
 
 public class ServerInitializer extends ChannelInitializer<Channel> {
 
-	private static final int MAX_FRAME_LENGTH = 2048;
+	private static final int MAX_FRAME_LENGTH = Integer.MAX_VALUE;
 	private static final int READER_IDLE_TIME = 30;
 	private static final int WRITER_IDLE_TIME = 0;
 	private static final int ALL_IDLE_TIME = 0;
-	private static final ByteBuf delimiter = Unpooled.copiedBuffer("\r\n".getBytes());
+	private static final ByteBuf delimiter = Unpooled.copiedBuffer("IMPALER".getBytes());
 
 	protected void initChannel(Channel channel) throws Exception {
 		ChannelPipeline pipeline = channel.pipeline();
