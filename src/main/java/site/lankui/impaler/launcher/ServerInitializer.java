@@ -8,6 +8,8 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.DelimiterBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.timeout.IdleStateHandler;
+import io.netty.util.CharsetUtil;
+import site.lankui.impaler.command.CommandDefine;
 import site.lankui.impaler.handler.CommandDecoder;
 import site.lankui.impaler.handler.CommandEncoder;
 import site.lankui.impaler.handler.ConnectHandler;
@@ -21,7 +23,7 @@ public class ServerInitializer extends ChannelInitializer<Channel> {
 	private static final int READER_IDLE_TIME = 30;
 	private static final int WRITER_IDLE_TIME = 0;
 	private static final int ALL_IDLE_TIME = 0;
-	private static final ByteBuf delimiter = Unpooled.copiedBuffer("IMPALER".getBytes());
+	private static final ByteBuf delimiter = Unpooled.copiedBuffer(CommandDefine.SPLIT_WORD, CharsetUtil.UTF_8);
 
 	protected void initChannel(Channel channel) throws Exception {
 		ChannelPipeline pipeline = channel.pipeline();

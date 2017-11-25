@@ -7,6 +7,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 import io.netty.util.CharsetUtil;
 import site.lankui.impaler.command.Command;
+import site.lankui.impaler.command.CommandDefine;
 
 public class CommandEncoder extends MessageToByteEncoder<Command> {
 	@Override
@@ -14,6 +15,6 @@ public class CommandEncoder extends MessageToByteEncoder<Command> {
 		out.writeInt(command.getType());
 		out.writeInt(command.getDataLength());
 		out.writeBytes(command.getData());
-		out.writeBytes(Unpooled.copiedBuffer("\r\n", CharsetUtil.UTF_8));
+		out.writeBytes(Unpooled.copiedBuffer(CommandDefine.SPLIT_WORD, CharsetUtil.UTF_8));
 	}
 }
