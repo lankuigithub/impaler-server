@@ -31,7 +31,6 @@ public class CommandDecoder extends SimpleChannelInboundHandler<ByteBuf> {
 		commandService.execute(command, getClient(ctx.channel()));
 	}
 
-
 	private Client getClient(Channel channel) {
 		if (ObjectUtils.isEmpty(client)) {
 			client = channel.attr(AttributeMapConstant.KEY_CLIENT).get();

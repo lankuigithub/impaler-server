@@ -1,10 +1,9 @@
 package site.lankui.impaler.handler;
 
 
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.timeout.IdleStateEvent;
 import site.lankui.impaler.client.Client;
 import site.lankui.impaler.client.ClientManager;
@@ -14,7 +13,7 @@ import site.lankui.impaler.util.SpringBeanUtils;
 import java.net.InetSocketAddress;
 import java.util.UUID;
 
-public class ConnectHandler extends SimpleChannelInboundHandler<ByteBuf> {
+public class ConnectHandler extends ChannelInboundHandlerAdapter {
 
 	private Client client;
 	private ClientManager clientManager;
@@ -37,8 +36,8 @@ public class ConnectHandler extends SimpleChannelInboundHandler<ByteBuf> {
 	}
 
 	@Override
-	protected void channelRead0(ChannelHandlerContext ctx, ByteBuf byteBuf) throws Exception {
-		ctx.fireChannelRead(byteBuf);
+	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+		ctx.fireChannelRead(msg);
 	}
 
 	@Override
@@ -49,6 +48,7 @@ public class ConnectHandler extends SimpleChannelInboundHandler<ByteBuf> {
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
 		clientManager.removeClient(client);
+		cause.printStackTrace();
 	}
 
 	@Override
