@@ -6,30 +6,34 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.DelimiterBasedFrameDecoder;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.timeout.IdleStateHandler;
-import site.lankui.impaler.handler.CommandInboundHandler;
-import site.lankui.impaler.handler.CommandOutboundHandler;
-import site.lankui.impaler.handler.HeartbeatHandler;
+import io.netty.util.CharsetUtil;
+import site.lankui.impaler.command.CommandDefine;
+import site.lankui.impaler.handler.CommandDecoder;
+import site.lankui.impaler.handler.CommandEncoder;
+import site.lankui.impaler.handler.ConnectHandler;
 
 import java.util.concurrent.TimeUnit;
 
 
 public class ServerInitializer extends ChannelInitializer<Channel> {
 
-	private static final int MAX_FRAME_LENGTH = 2048;
+	private static final int MAX_FRAME_LENGTH = Integer.MAX_VALUE;
 	private static final int READER_IDLE_TIME = 30;
 	private static final int WRITER_IDLE_TIME = 0;
 	private static final int ALL_IDLE_TIME = 0;
-	private static final ByteBuf delimiter = Unpooled.copiedBuffer("\r\n".getBytes());
+	private static final ByteBuf delimiter = Unpooled.copiedBuffer(CommandDefine.SPLIT_WORD, CharsetUtil.UTF_8);
 
 	protected void initChannel(Channel channel) throws Exception {
 		ChannelPipeline pipeline = channel.pipeline();
 		// out bound
-		pipeline.addLast(new CommandOutboundHandler());
+		pipeline.addLast(new CommandEncoder());
 		//  in bound
-		pipeline.addLast(new DelimiterBasedFrameDecoder(MAX_FRAME_LENGTH, delimiter));
 		pipeline.addLast(new IdleStateHandler(READER_IDLE_TIME, WRITER_IDLE_TIME, ALL_IDLE_TIME, TimeUnit.SECONDS));
-		pipeline.addLast(new HeartbeatHandler());
-		pipeline.addLast(new CommandInboundHandler());
+		pipeline.addLast(new DelimiterBasedFrameDecoder(MAX_FRAME_LENGTH, delimiter));
+		pipeline.addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 4, 4));
+		pipeline.addLast(new ConnectHandler());
+		pipeline.addLast(new CommandDecoder());
 	}
 }

@@ -1,32 +1,24 @@
 package site.lankui.impaler.handler;
 
 
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.timeout.IdleStateEvent;
-import io.netty.util.CharsetUtil;
 import site.lankui.impaler.client.Client;
 import site.lankui.impaler.client.ClientManager;
 import site.lankui.impaler.constant.AttributeMapConstant;
 import site.lankui.impaler.util.SpringBeanUtils;
 
 import java.net.InetSocketAddress;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.UUID;
 
-public class HeartbeatHandler extends SimpleChannelInboundHandler<ByteBuf> {
-
-	private static final String PING = "ping";
-	private static final String PONG = "pong";
-
+public class ConnectHandler extends ChannelInboundHandlerAdapter {
 
 	private Client client;
 	private ClientManager clientManager;
 
-	public HeartbeatHandler() {
+	public ConnectHandler() {
 		clientManager = SpringBeanUtils.getBean(ClientManager.class);
 	}
 
@@ -44,18 +36,8 @@ public class HeartbeatHandler extends SimpleChannelInboundHandler<ByteBuf> {
 	}
 
 	@Override
-	protected void channelRead0(ChannelHandlerContext ctx, ByteBuf byteBuf) throws Exception {
-		byte[] bytes = new byte[byteBuf.readableBytes()];
-		byteBuf.readBytes(bytes);
-		String message = new String(bytes, CharsetUtil.UTF_8);
-		System.out.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date())
-			+ " IpAddress: " + ctx.channel().remoteAddress().toString()
-			+ " Message: " + message);
-		if (PING.equalsIgnoreCase(message)) {
-			ctx.channel().writeAndFlush(PONG);
-		} else {
-			ctx.fireChannelRead(message);
-		}
+	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+		ctx.fireChannelRead(msg);
 	}
 
 	@Override
@@ -66,6 +48,7 @@ public class HeartbeatHandler extends SimpleChannelInboundHandler<ByteBuf> {
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
 		clientManager.removeClient(client);
+		cause.printStackTrace();
 	}
 
 	@Override
