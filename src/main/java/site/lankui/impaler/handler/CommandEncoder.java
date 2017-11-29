@@ -13,6 +13,7 @@ public class CommandEncoder extends MessageToByteEncoder<Command> {
 	@Override
 	protected void encode(ChannelHandlerContext ctx, Command command, ByteBuf out) throws Exception {
 		out.writeInt(command.getType());
+		out.writeInt(command.getTarget());
 		out.writeInt(command.getDataLength());
 		out.writeBytes(command.getData());
 		out.writeBytes(Unpooled.copiedBuffer(CommandDefine.SPLIT_WORD, CharsetUtil.UTF_8));

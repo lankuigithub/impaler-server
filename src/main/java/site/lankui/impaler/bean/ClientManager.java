@@ -1,4 +1,5 @@
-package site.lankui.impaler.client;
+package site.lankui.impaler.bean;
+
 
 import lombok.Getter;
 import lombok.Setter;
@@ -16,21 +17,17 @@ public class ClientManager {
 
 	@Setter
 	@Getter
-	private Map<String, Client> clientMap = new HashMap<>();
+	private Map<Integer, Client> clientMap = new HashMap<>();
 
 	public void addClient(Client client) {
-		if (!ObjectUtils.isEmpty(client)) {
+		if(!ObjectUtils.isEmpty(client)){
 			clientMap.put(client.getClientId(), client);
 		}
 	}
 
 	public void removeClient(Client client) {
-		if (!ObjectUtils.isEmpty(client)) {
+		if(!ObjectUtils.isEmpty(client)) {
 			clientMap.remove(client.getClientId());
 		}
-	}
-
-	public Client getClient(String clientId) {
-		return clientMap.get(clientId);
 	}
 }

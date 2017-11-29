@@ -11,6 +11,9 @@ public class Command {
 	private int type;
 	@Setter
 	@Getter
+	private int target;
+	@Setter
+	@Getter
 	private int dataLength;
 	@Setter
 	@Getter

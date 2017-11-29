@@ -1,4 +1,4 @@
-package site.lankui.impaler.client;
+package site.lankui.impaler.bean;
 
 import io.netty.channel.Channel;
 import lombok.Builder;
@@ -8,9 +8,8 @@ import lombok.Setter;
 @Setter
 @Getter
 @Builder
-public class Client {
-
-	private String clientId;
+public class Session {
+	private String sessionId;
 
 	private String ipAddress;
 
@@ -18,5 +17,5 @@ public class Client {
 
 	private Channel channel;
 
-
+	private Client client;
 }

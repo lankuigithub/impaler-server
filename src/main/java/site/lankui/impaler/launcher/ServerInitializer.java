@@ -32,7 +32,7 @@ public class ServerInitializer extends ChannelInitializer<Channel> {
 		//  in bound
 		pipeline.addLast(new IdleStateHandler(READER_IDLE_TIME, WRITER_IDLE_TIME, ALL_IDLE_TIME, TimeUnit.SECONDS));
 		pipeline.addLast(new DelimiterBasedFrameDecoder(MAX_FRAME_LENGTH, delimiter));
-		pipeline.addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 4, 4));
+		pipeline.addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 8, 4));
 		pipeline.addLast(new ConnectHandler());
 		pipeline.addLast(new CommandDecoder());
 	}
