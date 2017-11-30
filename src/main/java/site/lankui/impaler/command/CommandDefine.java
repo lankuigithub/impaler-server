@@ -1,5 +1,7 @@
 package site.lankui.impaler.command;
 
+import io.netty.buffer.Unpooled;
+import io.netty.util.CharsetUtil;
 import site.lankui.impaler.constant.ImpalerConstant;
 
 public class CommandDefine {
@@ -8,9 +10,10 @@ public class CommandDefine {
 	public static final int PONG = 0x00000001;
 	public static final int MESSAGE = 0x00000002;
 	public static final int IMAGE = 0x00000003;
-	public static final int REGISTER = 0x10000001;
-	public static final int CLIENT_LIST_REQUEST = 0x10000002;
-	public static final int CLIENT_LIST_RESPONSE = 0x10000003;
+	public static final int REGISTER_REQUEST = 0x10000001;
+	public static final int REGISTER_RESPONSE = 0x10000002;
+	public static final int CLIENT_LIST_REQUEST = 0x10000003;
+	public static final int CLIENT_LIST_RESPONSE = 0x10000004;
 	public static final int ERROR = 0x7FFFFFFE;
 	public static final int OK = 0x7FFFFFFF;
 
@@ -23,7 +26,7 @@ public class CommandDefine {
 	public static final Command COMMAND_OK;
 	static {
 		COMMAND_REGISTER = Command.builder()
-			.type(REGISTER)
+			.type(REGISTER_REQUEST)
 			.target(ImpalerConstant.CLIENT_ID_NONE)
 			.data(new byte[0])
 			.build();
@@ -41,6 +44,26 @@ public class CommandDefine {
 			.type(OK)
 			.target(ImpalerConstant.CLIENT_ID_NONE)
 			.data(new byte[0])
+			.build();
+	}
+
+	public static Command generateCommand(int commandType, int target, String commandData) {
+		byte[] data = commandData.getBytes(CharsetUtil.UTF_8);
+		return Command.builder()
+			.type(commandType)
+			.target(target)
+			.dataLength(data.length)
+			.data(data)
+			.build();
+	}
+
+	public static Command generateCommand(int commandType, int target, int commandData) {
+		byte[] data = Unpooled.copyInt(commandData).array();
+		return Command.builder()
+			.type(commandType)
+			.target(target)
+			.dataLength(data.length)
+			.data(data)
 			.build();
 	}
 }

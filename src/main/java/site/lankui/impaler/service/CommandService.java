@@ -8,16 +8,19 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ObjectUtils;
 import site.lankui.impaler.bean.Client;
 import site.lankui.impaler.bean.ClientManager;
 import site.lankui.impaler.bean.Session;
-import site.lankui.impaler.bean.SessionManager;
 import site.lankui.impaler.command.Command;
 import site.lankui.impaler.command.CommandDefine;
+import site.lankui.impaler.constant.ImpalerConstant;
+import site.lankui.impaler.constant.StatusType;
 import site.lankui.impaler.util.Generator;
 
 import javax.annotation.PostConstruct;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -31,8 +34,6 @@ import static site.lankui.impaler.command.CommandDefine.*;
 public class CommandService {
 
 	@Autowired
-	private SessionManager sessionManager;
-	@Autowired
 	private ClientManager clientManager;
 
 	private static final int MAX_THREAD_NUM = 5;
@@ -43,19 +44,30 @@ public class CommandService {
 		executorService = Executors.newFixedThreadPool(MAX_THREAD_NUM);
 	}
 
-	public void execute(Command command, Session session) {
+	public void execute(Command sourceCommand, Session sourceSession) {
 		executorService.execute(() -> {
-			switch (command.getType()) {
+			switch (sourceCommand.getType()) {
 				case PING:
-					session.getChannel().writeAndFlush(CommandDefine.COMMAND_PONG);
+					sourceSession.getChannel().writeAndFlush(CommandDefine.COMMAND_PONG);
 					break;
-				case REGISTER:
-					String clientName = new String(command.getData(), CharsetUtil.UTF_8);
+				case REGISTER_REQUEST:
+					String clientName = new String(sourceCommand.getData(), CharsetUtil.UTF_8);
+					int clientId = Generator.clientId(clientName);
 					Client client = Client.builder()
-						.clientId(Generator.clientId(clientName))
+						.clientId(clientId)
 						.name(clientName)
+						.status(StatusType.ON)
+						.sessionMap(new HashMap<>())
 						.build();
+					client.addSession(sourceSession);
 					clientManager.addClient(client);
+					sourceSession.getChannel().writeAndFlush(
+						CommandDefine.generateCommand(
+							CommandDefine.REGISTER_RESPONSE,
+							ImpalerConstant.CLIENT_ID_NONE,
+							clientId
+						)
+					);
 					break;
 				case CLIENT_LIST_REQUEST:
 					try {
@@ -65,24 +77,41 @@ public class CommandService {
 						}
 						ObjectMapper objectMapper = new ObjectMapper();
 						String json = objectMapper.writeValueAsString(clientList);
-						Command clientListCommand = Command.builder()
-							.type(CLIENT_LIST_RESPONSE)
-							.target(command.getTarget())
-							.dataLength(json.getBytes().length)
-							.data(json.getBytes(CharsetUtil.UTF_8))
-							.build();
-						session.getChannel().writeAndFlush(clientListCommand);
+						sourceSession.getChannel().writeAndFlush(
+							CommandDefine.generateCommand(
+								CommandDefine.CLIENT_LIST_RESPONSE,
+								ImpalerConstant.CLIENT_ID_NONE,
+								json
+							)
+						);
 					} catch (JsonProcessingException e) {
 						log.error("generate client list json error");
 					}
 					break;
 				default:
-					for (Map.Entry<String, Session> entry : sessionManager.getSessionMap().entrySet()) {
-						if (!entry.getKey().equals(session.getSessionId())) {
-							entry.getValue().getChannel().writeAndFlush(command);
+					if(sourceCommand.getTarget() == ImpalerConstant.CLIENT_ID_NONE) {
+						sourceCommand.setTarget(sourceSession.getClient().getClientId());
+						for (Map.Entry<Integer, Client> entry : clientManager.getClientMap().entrySet()) {
+							Client targetClient = entry.getValue();
+							if(targetClient.getClientId() == sourceSession.getClient().getClientId()) {
+								continue;
+							}
+							if(targetClient.containsSession(sourceSession.getType())) {
+								targetClient.getSession(sourceSession.getType())
+									.getChannel()
+									.writeAndFlush(sourceCommand);
+							}
+						}
+					} else {
+						if(clientManager.containsClient(sourceCommand.getTarget())) {
+							Session targetSession = clientManager.getClient(sourceCommand.getTarget()).getSession(sourceSession.getType());
+							if(!ObjectUtils.isEmpty(targetSession)) {
+								sourceCommand.setTarget(sourceSession.getClient().getClientId());
+								targetSession.getChannel().writeAndFlush(sourceCommand);
+							}
 						}
 					}
-					session.getChannel().writeAndFlush(CommandDefine.COMMAND_OK);
+					sourceSession.getChannel().writeAndFlush(CommandDefine.COMMAND_OK);
 					break;
 			}
 		});
