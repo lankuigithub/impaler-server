@@ -19,8 +19,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static site.lankui.impaler.command.CommandDefine.CLIENT_LIST_REQUEST;
-
 @Slf4j
 public class CommandHandler {
 
@@ -57,54 +55,52 @@ public class CommandHandler {
 		);
 	}
 
+	@CommandMethod(type = CommandDefine.CLIENT_LIST_REQUEST)
+	public void handleClientList(Command command, Session session) {
+		try {
+			List<Client> clientList = new ArrayList<>();
+			for(Map.Entry<Integer, Client> entry: clientManager.getClientMap().entrySet()) {
+				clientList.add(entry.getValue());
+			}
+			ObjectMapper objectMapper = new ObjectMapper();
+			String json = objectMapper.writeValueAsString(clientList);
+			session.getChannel().writeAndFlush(
+				CommandDefine.generateCommand(
+					CommandDefine.CLIENT_LIST_RESPONSE,
+					ImpalerConstant.CLIENT_ID_NONE,
+					json
+				)
+			);
+		} catch (JsonProcessingException e) {
+			log.error("generate client list json error");
+		}
+	}
+
 	@CommandMethod(type = defaultCommandType)
 	public void handleDefaultCommand(Command command, Session session) {
-		switch (command.getType()) {
-			case CLIENT_LIST_REQUEST:
-				try {
-					List<Client> clientList = new ArrayList<>();
-					for(Map.Entry<Integer, Client> entry: clientManager.getClientMap().entrySet()) {
-						clientList.add(entry.getValue());
-					}
-					ObjectMapper objectMapper = new ObjectMapper();
-					String json = objectMapper.writeValueAsString(clientList);
-					session.getChannel().writeAndFlush(
-						CommandDefine.generateCommand(
-							CommandDefine.CLIENT_LIST_RESPONSE,
-							ImpalerConstant.CLIENT_ID_NONE,
-							json
-						)
-					);
-				} catch (JsonProcessingException e) {
-					log.error("generate client list json error");
+		if(command.getTarget() == ImpalerConstant.CLIENT_ID_NONE) {
+			command.setTarget(session.getClient().getClientId());
+			for (Map.Entry<Integer, Client> entry : clientManager.getClientMap().entrySet()) {
+				Client targetClient = entry.getValue();
+				if(targetClient.getClientId() == session.getClient().getClientId()) {
+					continue;
 				}
-				break;
-			default:
-				if(command.getTarget() == ImpalerConstant.CLIENT_ID_NONE) {
+				if(targetClient.containsSession(session.getType())) {
+					targetClient.getSession(session.getType())
+						.getChannel()
+						.writeAndFlush(command);
+				}
+			}
+		} else {
+			if(clientManager.containsClient(command.getTarget())) {
+				Session targetSession = clientManager.getClient(command.getTarget()).getSession(session.getType());
+				if(!ObjectUtils.isEmpty(targetSession)) {
 					command.setTarget(session.getClient().getClientId());
-					for (Map.Entry<Integer, Client> entry : clientManager.getClientMap().entrySet()) {
-						Client targetClient = entry.getValue();
-						if(targetClient.getClientId() == session.getClient().getClientId()) {
-							continue;
-						}
-						if(targetClient.containsSession(session.getType())) {
-							targetClient.getSession(session.getType())
-								.getChannel()
-								.writeAndFlush(command);
-						}
-					}
-				} else {
-					if(clientManager.containsClient(command.getTarget())) {
-						Session targetSession = clientManager.getClient(command.getTarget()).getSession(session.getType());
-						if(!ObjectUtils.isEmpty(targetSession)) {
-							command.setTarget(session.getClient().getClientId());
-							targetSession.getChannel().writeAndFlush(command);
-						}
-					}
+					targetSession.getChannel().writeAndFlush(command);
 				}
-				session.getChannel().writeAndFlush(CommandDefine.COMMAND_OK);
-				break;
+			}
 		}
+		session.getChannel().writeAndFlush(CommandDefine.COMMAND_OK);
 	}
 
 }
