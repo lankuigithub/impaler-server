@@ -1,5 +1,6 @@
 package site.lankui.impaler.command;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
 import site.lankui.impaler.constant.ImpalerConstant;
@@ -58,7 +59,9 @@ public class CommandDefine {
 	}
 
 	public static Command generateCommand(int commandType, int target, int commandData) {
-		byte[] data = Unpooled.copyInt(commandData).array();
+		ByteBuf byteBuf = Unpooled.copyInt(commandData);
+		byte[] data = new byte[byteBuf.readableBytes()];
+		byteBuf.readBytes(data);
 		return Command.builder()
 			.type(commandType)
 			.target(target)
