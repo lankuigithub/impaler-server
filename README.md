@@ -27,6 +27,6 @@
     - 0x00000004: COMMAND_SCREEN
     - 0x00000005: COMMAND_CAMERA
     - 0x00000006: COMMAND_REGISTER # 注册客户端，如果是服务器返回客户端ID  e.g. {“code”:0, “msg”:“请求成功”, “data”:{“id”:123}}
-    - 0x00000007: COMMAND_CLIENT_LIST # 客户端列表，如果是服务器返回客户端列表  e.g. {“code”:0, “msg”:“请求成功”, “data”:{“name”:”客户端列表”, “list”:[0, 1, 2]}}
+    - 0x00000007: COMMAND_CLIENT_LIST # 客户端列表，如果是服务器返回客户端列表  e.g. {“code”:0, “msg”:“请求成功”, “data”:{“name”:”客户端列表”, “list”:[{“id”:1, “name”:”1号”}, {“id”:2, “name”:”2号”}]}}
 
 
