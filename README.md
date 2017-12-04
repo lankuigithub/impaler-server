@@ -30,4 +30,4 @@
     - 0x10000003: CLIENT_LIST_REQUEST # 请求获取客户端列表
     - 0X10000004: CLIENT_LIST_RESPONSE # 返回客户端列表，数据为JSON字符串 e.g. [{clientId:20171129, name:"mark-mac"}]
     - 0x7FFFFFFE: ERROR
-    - 0x7FFFFFFF: OK
+    - 0x7FFFFFFF: OK 
