@@ -26,8 +26,8 @@ public class CommandService {
 	private ExecutorService executorService;
 	private static final Set<Integer> NO_REGISTER_SET = new HashSet<>();
 	static {
-		NO_REGISTER_SET.add(CommandDefine.PING);
-		NO_REGISTER_SET.add(CommandDefine.REGISTER_REQUEST);
+		NO_REGISTER_SET.add(CommandDefine.COMMAND_HEART_BEAT);
+		NO_REGISTER_SET.add(CommandDefine.COMMAND_REGISTER);
 	}
 
 	@PostConstruct

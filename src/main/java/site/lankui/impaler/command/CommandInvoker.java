@@ -2,6 +2,7 @@ package site.lankui.impaler.command;
 
 
 import site.lankui.impaler.bean.Session;
+import site.lankui.impaler.command.handler.CommandHandler;
 import site.lankui.impaler.util.SpringBeanUtils;
 
 import java.lang.reflect.InvocationTargetException;

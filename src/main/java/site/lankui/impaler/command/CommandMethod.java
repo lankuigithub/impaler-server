@@ -9,5 +9,5 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 @Retention(value = RetentionPolicy.RUNTIME)
 public @interface CommandMethod {
-	int type();
+	int[] type();
 }
