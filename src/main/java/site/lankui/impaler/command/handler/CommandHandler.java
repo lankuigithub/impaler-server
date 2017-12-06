@@ -51,11 +51,12 @@ public class CommandHandler {
 		clientManager.addClient(client);
 		Map<String, Object> data = new HashMap<>();
 		data.put("id", clientId);
+		Message message = Message.successMessage(data);
 		sendToMyself(
 			CommandDefine.generateCommand(
 				CommandDefine.COMMAND_REGISTER,
 				ImpalerConstant.CLIENT_ID_NONE,
-				JsonUtils.objectToString(data)
+				JsonUtils.objectToString(message)
 			),
 			session
 		);
@@ -69,7 +70,7 @@ public class CommandHandler {
 		}
 		Map<String, Object> data = new HashMap<>();
 		data.put("name", "客户端列表");
-		data.put("data", clientList);
+		data.put("list", clientList);
 		Message message = Message.successMessage(data);
 		sendToMyself(
 			CommandDefine.generateCommand(
