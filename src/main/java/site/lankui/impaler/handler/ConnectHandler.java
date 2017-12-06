@@ -6,6 +6,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.timeout.IdleStateEvent;
 import org.springframework.util.ObjectUtils;
+import site.lankui.impaler.bean.Client;
 import site.lankui.impaler.bean.Session;
 import site.lankui.impaler.constant.AttributeMapConstant;
 import site.lankui.impaler.constant.SessionType;
@@ -56,7 +57,10 @@ public class ConnectHandler extends ChannelInboundHandlerAdapter {
 				case READER_IDLE:
 				case WRITER_IDLE:
 				case ALL_IDLE:
-					session.getClient().removeSession(session);
+					Client client = session.getClient();
+					if(!ObjectUtils.isEmpty(client)) {
+						session.getClient().removeSession(session);
+					}
 					ChannelFuture future = ctx.channel().closeFuture();
 					future.sync();
 			}
