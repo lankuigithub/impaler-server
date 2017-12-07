@@ -1,4 +1,4 @@
-package site.lankui.impaler.bean;
+package site.lankui.impaler.client.bean;
 
 import io.netty.channel.Channel;
 import lombok.Builder;

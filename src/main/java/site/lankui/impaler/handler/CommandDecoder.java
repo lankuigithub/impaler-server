@@ -5,7 +5,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.springframework.util.ObjectUtils;
-import site.lankui.impaler.bean.Session;
+import site.lankui.impaler.client.bean.Session;
 import site.lankui.impaler.command.Command;
 import site.lankui.impaler.constant.AttributeMapConstant;
 import site.lankui.impaler.service.CommandService;
@@ -29,10 +29,10 @@ public class CommandDecoder extends SimpleChannelInboundHandler<ByteBuf> {
 		byte[] bytes = new byte[byteBuf.readableBytes()];
 		byteBuf.readBytes(bytes);
 		command.setData(bytes);
-		commandService.execute(command, getClient(ctx.channel()));
+		commandService.execute(command, getSession(ctx.channel()));
 	}
 
-	private Session getClient(Channel channel) {
+	private Session getSession(Channel channel) {
 		if (ObjectUtils.isEmpty(session)) {
 			session = channel.attr(AttributeMapConstant.KEY_CLIENT).get();
 		}

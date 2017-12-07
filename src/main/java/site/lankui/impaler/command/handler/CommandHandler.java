@@ -1,13 +1,12 @@
 package site.lankui.impaler.command.handler;
 
 
-import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.ObjectUtils;
-import site.lankui.impaler.bean.Client;
-import site.lankui.impaler.bean.ClientManager;
-import site.lankui.impaler.bean.Message;
-import site.lankui.impaler.bean.Session;
+import site.lankui.impaler.client.bean.Client;
+import site.lankui.impaler.client.ConnectManager;
+import site.lankui.impaler.command.Message;
+import site.lankui.impaler.client.bean.Session;
 import site.lankui.impaler.command.Command;
 import site.lankui.impaler.command.CommandDefine;
 import site.lankui.impaler.command.CommandMethod;
@@ -25,11 +24,11 @@ import java.util.Map;
 @Slf4j
 public class CommandHandler {
 
-	private ClientManager clientManager;
+	private ConnectManager connectManager;
 	public static final int defaultCommandType = -1;
 
 	public CommandHandler() {
-		clientManager = SpringBeanUtils.getBean(ClientManager.class);
+		connectManager = SpringBeanUtils.getBean(ConnectManager.class);
 	}
 
 	@CommandMethod(type = CommandDefine.COMMAND_HEART_BEAT)
@@ -39,24 +38,23 @@ public class CommandHandler {
 
 	@CommandMethod(type = CommandDefine.COMMAND_REGISTER)
 	public void handleRegister(Command command, Session session) {
-		String clientName = new String(command.getData(), CharsetUtil.UTF_8);
+		Message message = JsonUtils.bytesToObject(command.getData(), Message.class);
+		String clientName = message.getData().get("name").toString();
 		int clientId = Generator.clientId(clientName);
 		Client client = Client.builder()
 			.clientId(clientId)
 			.name(clientName)
-			.status(StatusType.ON)
 			.sessionMap(new HashMap<>())
+			.status(StatusType.ON)
 			.build();
-		client.addSession(session);
-		clientManager.addClient(client);
+		connectManager.addClient(client, session);
 		Map<String, Object> data = new HashMap<>();
 		data.put("id", clientId);
-		Message message = Message.successMessage(data);
 		sendToMyself(
 			CommandDefine.generateCommand(
 				CommandDefine.COMMAND_REGISTER,
 				ImpalerConstant.CLIENT_ID_NONE,
-				JsonUtils.objectToString(message)
+				JsonUtils.objectToString(Message.successMessage(data))
 			),
 			session
 		);
@@ -65,7 +63,7 @@ public class CommandHandler {
 	@CommandMethod(type = CommandDefine.COMMAND_CLIENT_LIST)
 	public void handleClientList(Command command, Session session) {
 		List<Client> clientList = new ArrayList<>();
-		for(Map.Entry<Integer, Client> entry: clientManager.getClientMap().entrySet()) {
+		for(Map.Entry<Integer, Client> entry: connectManager.getClientMap().entrySet()) {
 			clientList.add(entry.getValue());
 		}
 		Map<String, Object> data = new HashMap<>();
@@ -124,11 +122,11 @@ public class CommandHandler {
 	}
 
 	private void sendToTarget(Command command, Session session) {
-		Client client = clientManager.getClient(command.getTarget());
+		Client client = connectManager.getClient(command.getTarget());
 		if (ObjectUtils.isEmpty(client)) {
 			return;
 		}
-		Session targetSession = client.getSession(session.getType());
+		Session targetSession = connectManager.getSession(client, session.getType());
 		if (ObjectUtils.isEmpty(targetSession)) {
 			return;
 		}
@@ -137,12 +135,12 @@ public class CommandHandler {
 	}
 
 	private void sendToOthers(Command command, Session session) {
-		Map<Integer, Client> clientMap = clientManager.getClientMap();
+		Map<Integer, Client> clientMap = connectManager.getClientMap();
 		for (Map.Entry<Integer, Client> entry : clientMap.entrySet()) {
 			if (entry.getKey() == session.getClient().getClientId()) {
 				continue;
 			}
-			Session targetSession = entry.getValue().getSession(session.getType());
+			Session targetSession = connectManager.getSession(entry.getValue(), session.getType());
 			if (!ObjectUtils.isEmpty(targetSession)) {
 				command.setTarget(session.getClient().getClientId());
 				targetSession.getChannel().writeAndFlush(command);

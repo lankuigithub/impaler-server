@@ -5,18 +5,23 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.timeout.IdleStateEvent;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.ObjectUtils;
-import site.lankui.impaler.bean.Client;
-import site.lankui.impaler.bean.Session;
+import site.lankui.impaler.client.ConnectManager;
+import site.lankui.impaler.client.bean.Client;
+import site.lankui.impaler.client.bean.Session;
 import site.lankui.impaler.constant.AttributeMapConstant;
 import site.lankui.impaler.constant.SessionType;
+import site.lankui.impaler.util.SpringBeanUtils;
 
 import java.net.InetSocketAddress;
 import java.util.UUID;
 
+@Slf4j
 public class ConnectHandler extends ChannelInboundHandlerAdapter {
 
 	private Session session;
+	private ConnectManager connectManager;
 
 	@Override
 	public void channelActive(ChannelHandlerContext ctx) throws Exception {
@@ -38,15 +43,13 @@ public class ConnectHandler extends ChannelInboundHandlerAdapter {
 
 	@Override
 	public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-		if(!ObjectUtils.isEmpty(session.getClient())) {
-			session.getClient().removeSession(session);
-		}
+		getConnectManager().removeSession(session);
 	}
 
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-		session.getClient().removeSession(session);
-		cause.printStackTrace();
+		getConnectManager().removeSession(session);
+		log.error("Connect error: ", cause);
 	}
 
 	@Override
@@ -58,13 +61,20 @@ public class ConnectHandler extends ChannelInboundHandlerAdapter {
 				case WRITER_IDLE:
 				case ALL_IDLE:
 					Client client = session.getClient();
-					if(!ObjectUtils.isEmpty(client)) {
-						session.getClient().removeSession(session);
+					if (!ObjectUtils.isEmpty(client)) {
+						getConnectManager().removeSession(session);
+						ChannelFuture future = ctx.channel().closeFuture();
+						future.sync();
 					}
-					ChannelFuture future = ctx.channel().closeFuture();
-					future.sync();
 			}
 		}
+	}
+
+	private ConnectManager getConnectManager() {
+		if (ObjectUtils.isEmpty(connectManager)) {
+			connectManager = SpringBeanUtils.getBean(ConnectManager.class);
+		}
+		return connectManager;
 	}
 
 }

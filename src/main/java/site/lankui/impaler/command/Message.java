@@ -1,4 +1,4 @@
-package site.lankui.impaler.bean;
+package site.lankui.impaler.command;
 
 
 import lombok.Builder;
