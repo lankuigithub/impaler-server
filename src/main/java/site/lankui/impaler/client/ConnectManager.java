@@ -48,7 +48,7 @@ public class ConnectManager {
 				}
 			}
 			if (removeData) {
-				serverManager.pushClientList();
+				serverManager.pushClientListFilter();
 			}
 		}, 0, 60, TimeUnit.SECONDS);
 	}
@@ -67,7 +67,7 @@ public class ConnectManager {
 		// set client status
 		client.setStatus(StatusType.ON);
 		// push client list
-		serverManager.pushClientList();
+		serverManager.pushClientListFilter(client);
 	}
 
 	public void removeClient(Client client) {
@@ -92,7 +92,7 @@ public class ConnectManager {
 		// set client status
 		session.getClient().setStatus(StatusType.OFF);
 		// push client list
-		serverManager.pushClientList();
+		serverManager.pushClientListFilter();
 
 	}
 

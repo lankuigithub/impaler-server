@@ -23,7 +23,7 @@ public class ServerManager {
 	@Autowired
 	private ConnectManager connectManager;
 
-	public void pushClientList() {
+	public void pushClientListFilter(Client... clients) {
 		List<Client> clientList = new ArrayList<>();
 		for(Map.Entry<Integer, Client> entry: connectManager.getClientMap().entrySet()) {
 			clientList.add(entry.getValue());
@@ -38,7 +38,18 @@ public class ServerManager {
 			JsonUtils.objectToString(message)
 		);
 		for(Map.Entry<Integer, Client> clientEntry: connectManager.getClientMap().entrySet()) {
-			for (Map.Entry<SessionType, Session> sessionEntry: clientEntry.getValue().getSessionMap().entrySet()) {
+			Client client = clientEntry.getValue();
+			boolean filter = false;
+			for(int i = 0; clients != null && i < clients.length; i++) {
+				if(client.getClientId() == clients[i].getClientId()){
+					filter = true;
+					break;
+				}
+			}
+			if(filter){
+				continue;
+			}
+			for (Map.Entry<SessionType, Session> sessionEntry: client.getSessionMap().entrySet()) {
 				sessionEntry.getValue().getChannel().writeAndFlush(command);
 				break;
 			}
