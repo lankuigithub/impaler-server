@@ -18,9 +18,8 @@ import site.lankui.impaler.server.ServerManager;
 import javax.annotation.PostConstruct;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.Timer;
+import java.util.TimerTask;
 
 @Service
 @Scope(value = BeanDefinition.SCOPE_SINGLETON)
@@ -34,23 +33,27 @@ public class ConnectManager {
 	@Autowired
 	private ServerManager serverManager;
 
-	private ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
+	private Timer timer;
 
 	@PostConstruct
 	public void init() {
 		clientMap = new HashMap<>();
-		executorService.scheduleAtFixedRate(() -> {
-			boolean removeData = false;
-			for(Map.Entry<Integer, Client> entry : clientMap.entrySet()) {
-				if(entry.getValue().getSessionMap().isEmpty()){
-					removeClient(entry.getValue());
-					removeData = true;
+		timer = new Timer();
+		timer.scheduleAtFixedRate(new TimerTask() {
+			@Override
+			public void run() {
+				boolean removeData = false;
+				for(Map.Entry<Integer, Client> entry : clientMap.entrySet()) {
+					if(entry.getValue().getSessionMap().isEmpty()){
+						removeClient(entry.getValue());
+						removeData = true;
+					}
+				}
+				if (removeData) {
+					serverManager.pushClientListFilter();
 				}
 			}
-			if (removeData) {
-				serverManager.pushClientListFilter();
-			}
-		}, 0, 60, TimeUnit.SECONDS);
+		}, 0, 60 * 1000);
 	}
 
 	public Client getClient(int clientId) {

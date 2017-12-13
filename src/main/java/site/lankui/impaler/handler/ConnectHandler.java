@@ -1,7 +1,7 @@
 package site.lankui.impaler.handler;
 
 
-import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.timeout.IdleStateEvent;
@@ -63,8 +63,11 @@ public class ConnectHandler extends ChannelInboundHandlerAdapter {
 					Client client = session.getClient();
 					if (!ObjectUtils.isEmpty(client)) {
 						getConnectManager().removeSession(session);
-						ChannelFuture future = ctx.channel().closeFuture();
-						future.sync();
+						ctx.channel().closeFuture().addListener((ChannelFutureListener) future -> {
+							if(!ObjectUtils.isEmpty(future.cause())) {
+								log.error("close error: ", future.cause());
+							}
+						});
 					}
 			}
 		}
