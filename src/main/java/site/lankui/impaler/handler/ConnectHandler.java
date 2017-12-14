@@ -10,6 +10,7 @@ import org.springframework.util.ObjectUtils;
 import site.lankui.impaler.client.ConnectManager;
 import site.lankui.impaler.client.bean.Client;
 import site.lankui.impaler.client.bean.Session;
+import site.lankui.impaler.command.CommandDefine;
 import site.lankui.impaler.constant.AttributeMapConstant;
 import site.lankui.impaler.constant.SessionType;
 import site.lankui.impaler.util.SpringBeanUtils;
@@ -43,13 +44,13 @@ public class ConnectHandler extends ChannelInboundHandlerAdapter {
 
 	@Override
 	public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-		getConnectManager().removeSession(session);
+		closeChannel(ctx);
 	}
 
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-		getConnectManager().removeSession(session);
 		log.error("Connect error: ", cause);
+		closeChannel(ctx);
 	}
 
 	@Override
@@ -58,18 +59,16 @@ public class ConnectHandler extends ChannelInboundHandlerAdapter {
 			IdleStateEvent e = (IdleStateEvent) evt;
 			switch (e.state()) {
 				case READER_IDLE:
+					log.info("Reader idle...");
+					break;
 				case WRITER_IDLE:
+					log.info("Writer idle...");
+					break;
 				case ALL_IDLE:
-					Client client = session.getClient();
-					if (!ObjectUtils.isEmpty(client)) {
-						getConnectManager().removeSession(session);
-						ctx.channel().closeFuture().addListener((ChannelFutureListener) future -> {
-							if(!ObjectUtils.isEmpty(future.cause())) {
-								log.error("close error: ", future.cause());
-							}
-						});
-					}
+					log.info("All idle...");
+					break;
 			}
+			ctx.writeAndFlush(CommandDefine.COMMAND_HEART_BEAT).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
 		}
 	}
 
@@ -78,6 +77,16 @@ public class ConnectHandler extends ChannelInboundHandlerAdapter {
 			connectManager = SpringBeanUtils.getBean(ConnectManager.class);
 		}
 		return connectManager;
+	}
+
+	private void closeChannel(ChannelHandlerContext ctx) {
+		Client client = session.getClient();
+		if(!ObjectUtils.isEmpty(client)) {
+			getConnectManager().unRegisterClient(client, session);
+		}
+		if(!ObjectUtils.isEmpty(ctx)) {
+			ctx.channel().closeFuture().addListener(ChannelFutureListener.CLOSE);
+		}
 	}
 
 }

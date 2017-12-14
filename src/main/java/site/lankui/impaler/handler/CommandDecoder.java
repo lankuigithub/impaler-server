@@ -11,6 +11,8 @@ import site.lankui.impaler.constant.AttributeMapConstant;
 import site.lankui.impaler.service.CommandService;
 import site.lankui.impaler.util.SpringBeanUtils;
 
+import java.util.Date;
+
 public class CommandDecoder extends SimpleChannelInboundHandler<ByteBuf> {
 
 	private Session session;
@@ -22,6 +24,7 @@ public class CommandDecoder extends SimpleChannelInboundHandler<ByteBuf> {
 
 	@Override
 	protected void channelRead0(ChannelHandlerContext ctx, ByteBuf byteBuf) throws Exception {
+		session = getSession(ctx.channel());
 		Command command = new Command();
 		command.setType(byteBuf.readInt());
 		command.setTarget(byteBuf.readInt());
@@ -29,7 +32,9 @@ public class CommandDecoder extends SimpleChannelInboundHandler<ByteBuf> {
 		byte[] bytes = new byte[byteBuf.readableBytes()];
 		byteBuf.readBytes(bytes);
 		command.setData(bytes);
-		commandService.execute(command, getSession(ctx.channel()));
+		command.setSessionType(session.getType());
+		command.setDate(new Date());
+		commandService.execute(command, session);
 	}
 
 	private Session getSession(Channel channel) {

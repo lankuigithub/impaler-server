@@ -4,22 +4,23 @@ package site.lankui.impaler.client;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 import site.lankui.impaler.client.bean.Client;
 import site.lankui.impaler.client.bean.Session;
+import site.lankui.impaler.command.Command;
+import site.lankui.impaler.command.CommandDefine;
+import site.lankui.impaler.command.Message;
+import site.lankui.impaler.constant.ImpalerConstant;
 import site.lankui.impaler.constant.SessionType;
 import site.lankui.impaler.constant.StatusType;
-import site.lankui.impaler.server.ServerManager;
+import site.lankui.impaler.util.JsonUtils;
 
 import javax.annotation.PostConstruct;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Scope(value = BeanDefinition.SCOPE_SINGLETON)
@@ -30,79 +31,58 @@ public class ConnectManager {
 	@Getter
 	private Map<Integer, Client> clientMap;
 
-	@Autowired
-	private ServerManager serverManager;
-
-	private Timer timer;
-
 	@PostConstruct
 	public void init() {
 		clientMap = new HashMap<>();
-		timer = new Timer();
-		timer.scheduleAtFixedRate(new TimerTask() {
-			@Override
-			public void run() {
-				boolean removeData = false;
-				for(Map.Entry<Integer, Client> entry : clientMap.entrySet()) {
-					if(entry.getValue().getSessionMap().isEmpty()){
-						removeClient(entry.getValue());
-						removeData = true;
-					}
-				}
-				if (removeData) {
-					serverManager.pushClientListFilter();
-				}
-			}
-		}, 0, 60 * 1000);
 	}
 
 	public Client getClient(int clientId) {
 		return clientMap.get(clientId);
 	}
 
-	public void addClient(Client client, Session session) {
-		if (clientMap.containsKey(client.getClientId())) {
-			client = clientMap.get(client.getClientId());
+	public void registerClient(Client client, Session session) {
+		Integer clientId = client.getClientId();
+		if (clientMap.containsKey(clientId)) {
+			client = clientMap.get(clientId);
 		} else {
-			clientMap.put(client.getClientId(), client);
+			clientMap.put(clientId, client);
 		}
-		addSession(client, session);
-		// set client status
-		client.setStatus(StatusType.ON);
+		client.addSession(session);
 		// push client list
-		serverManager.pushClientListFilter(client);
+		pushClientListFilter(session.getType(), client);
 	}
 
-	public void removeClient(Client client) {
-		if(!ObjectUtils.isEmpty(client)) {
-			clientMap.remove(client.getClientId());
-		}
-	}
-
-	public Session getSession(Client client, SessionType sessionType) {
-		return client.getSessionMap().get(sessionType);
-	}
-
-	public void removeSession(Session session) {
-		if (ObjectUtils.isEmpty(session.getClient())) {
+	public void unRegisterClient(Client client, Session session) {
+		if (ObjectUtils.isEmpty(client)) {
 			return;
 		}
-		Map<SessionType, Session> sessionMap = session.getClient().getSessionMap();
-		sessionMap.remove(session.getType());
-		if (!sessionMap.isEmpty()) {
-			return;
-		}
-		// set client status
-		session.getClient().setStatus(StatusType.OFF);
+		client.removeSession(session);
 		// push client list
-		serverManager.pushClientListFilter();
-
+		pushClientListFilter(session.getType());
 	}
 
-	private void addSession(Client client, Session session) {
-		Map<SessionType, Session> sessionMap = client.getSessionMap();
-		sessionMap.put(session.getType(), session);
-		session.setClient(client);
+	public void pushClientListFilter(SessionType sessionType, Client... clients) {
+		List<Client> clientList = new ArrayList<>();
+		for(Map.Entry<Integer, Client> entry: clientMap.entrySet()) {
+			clientList.add(entry.getValue());
+		}
+		Map<String, Object> data = new HashMap<>();
+		data.put("name", "客户端列表");
+		data.put("list", clientList);
+		Command command = CommandDefine.generateCommand(
+			CommandDefine.COMMAND_CLIENT_LIST,
+			ImpalerConstant.CLIENT_ID_NONE,
+			JsonUtils.objectToString(Message.successMessage(data))
+		);
+		List<Integer> filterClientIdList = Arrays.stream(clients).map(Client::getClientId).collect(Collectors.toList());
+		clientList.stream()
+			.filter(client -> !filterClientIdList.contains(client.getClientId()))
+			.forEach(client -> {
+				Session session = client.getSession(sessionType);
+				if(!ObjectUtils.isEmpty(session)) {
+					session.sendCommand(command);
+				}
+			});
 	}
 
 }
